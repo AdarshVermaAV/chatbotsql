@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ChatFloat AI</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-color: #0f0f13;
+      --primary-color: #1a1a22;
+      --secondary-color: #252532;
+      --text-light: #f0f0f0;
+      --text-muted: #a0a0b0;
+      --accent: #4d7cfe;
+      --accent-hover: #3a69eb;
+      --success: #2ecc71;
+      --border-color: #333340;
+      --typing-indicator: #4d7cfe;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 850px;
+      margin: 30px 20px;
+      background-color: var(--primary-color);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-color) 100%);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+    }
+
+    .header-icon {
+      margin-right: 16px;
+      font-size: 24px;
+      background: linear-gradient(135deg, #4d7cfe, #835df2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+      width: 40px;
+      border-radius: 12px;
+      background-color: rgba(77, 124, 254, 0.1);
+    }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+      background: linear-gradient(90deg, #4d7cfe, #835df2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-text p {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 12px;
+    }
+
+    .header-btn {
+      background: rgba(77, 124, 254, 0.1);
+      color: var(--accent);
+      border: none;
+      height: 36px;
+      width: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .header-btn:hover {
+      background: rgba(77, 124, 254, 0.2);
+    }
+
+    .chat-box {
+      flex-grow: 1;
+      padding: 24px;
+      overflow-y: auto;
+      background-color: var(--primary-color);
+      scroll-behavior: smooth;
+    }
+
+    .chat-box::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-box::-webkit-scrollbar-track {
+      background: var(--primary-color);
+    }
+
+    .chat-box::-webkit-scrollbar-thumb {
+      background: var(--secondary-color);
+      border-radius: 4px;
+    }
+
+    .chat-box::-webkit-scrollbar-thumb:hover {
+      background: #444;
+    }
+
+    .message {
+      margin-bottom: 24px;
+      max-width: 85%;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .user-message {
+      margin-left: auto;
+    }
+
+    .ai-message {
+      margin-right: auto;
+    }
+
+    .message-container {
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      margin-right: 12px;
+      background-color: var(--secondary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .user-avatar {
+      background-color: rgba(77, 124, 254, 0.1);
+      color: var(--accent);
+    }
+
+    .ai-avatar {
+      background: linear-gradient(135deg, #4d7cfe, #835df2);
+      color: white;
+    }
+
+    .message-content {
+      flex-grow: 1;
+    }
+
+    .question {
+      background-color: var(--accent);
+      color: #fff;
+      padding: 16px;
+      border-radius: 16px 16px 4px 16px;
+      font-weight: 500;
+      box-shadow: 0 4px 12px rgba(77, 124, 254, 0.2);
+    }
+
+    .answer {
+      background-color: var(--secondary-color);
+      color: var(--text-light);
+      padding: 16px;
+      border-radius: 16px 16px 16px 4px;
+      white-space: pre-wrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      line-height: 1.6;
+    }
+
+    .message-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+      text-align: right;
+    }
+
+    .input-area {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border-color);
+      background-color: var(--primary-color);
+      position: relative;
+    }
+
+    form {
+      display: flex;
+      align-items: center;
+      background-color: var(--secondary-color);
+      border-radius: 12px;
+      padding: 6px 6px 6px 16px;
+    }
+
+    textarea {
+      flex-grow: 1;
+      resize: none;
+      padding: 10px 0;
+      background-color: transparent;
+      color: var(--text-light);
+      border: none;
+      font-size: 16px;
+      font-family: inherit;
+      line-height: 1.5;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    textarea:focus {
+      outline: none;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .input-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .input-btn:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: var(--text-light);
+    }
+
+    .send-btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .send-btn:hover {
+      background-color: var(--accent-hover);
+      transform: scale(1.05);
+    }
+
+    .send-btn:active {
+      transform: scale(0.95);
+    }
+
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      margin-left: 8px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--typing-indicator);
+      margin-right: 3px;
+      animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .typing-dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-dot:nth-child(3) {
+      animation-delay: 0.4s;
+      margin-right: 0;
+    }
+
+    .suggestion-chips {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .suggestion-chip {
+      padding: 8px 16px;
+      background-color: rgba(77, 124, 254, 0.1);
+      color: var(--accent);
+      border-radius: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .suggestion-chip:hover {
+      background-color: rgba(77, 124, 254, 0.2);
+    }
+
+    @keyframes typingAnimation {
+      0%, 60%, 100% {
+        transform: translateY(0);
+        opacity: 0.4;
+      }
+      30% {
+        transform: translateY(-5px);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(77, 124, 254, 0.4);
+      }
+      70% {
+        box-shadow: 0 0 0 10px rgba(77, 124, 254, 0);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(77, 124, 254, 0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 10px;
+        height: calc(100vh - 20px);
+        border-radius: 12px;
+      }
+
+      .header {
+        padding: 16px;
+      }
+
+      .chat-box {
+        padding: 16px;
+      }
+
+      .message {
+        max-width: 95%;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+      }
+
+      .suggestion-chips {
+        overflow-x: auto;
+        padding-bottom: 8px;
+        flex-wrap: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-left">
+        <div class="header-icon">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="header-text">
+          <h1>ChatFloat AI</h1>
+          <p>Database queries & general knowledge</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <button class="header-btn" title="Clear conversation" id="clearBtn">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-box" id="chat-box">
+      {% if not previous_messages %}
+      <div class="message ai-message">
+        <div class="message-container">
+          <div class="avatar ai-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <div class="answer">Hello! I'm your smart assistant — here to help with both database queries and general questions. How can I help you today?</div>
+            <div class="message-time">Today, {{ current_time }}</div>
+          </div>
+        </div>
+        <div class="suggestion-chips">
+          <div class="suggestion-chip">How many tables are in the database?</div>
+          <div class="suggestion-chip">Show all users</div>
+          <div class="suggestion-chip">Tell me a fun fact</div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if previous_messages %}
+        {% for message in previous_messages %}
+          <div class="message user-message">
+            <div class="message-container">
+              <div class="avatar user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="message-content">
+                <div class="question">{{ message.question }}</div>
+                <div class="message-time">Today</div>
+              </div>
+            </div>
+          </div>
+          <div class="message ai-message">
+            <div class="message-container">
+              <div class="avatar ai-avatar">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div class="message-content">
+                <div class="answer">{{ message.answer }}</div>
+                <div class="message-time">Today</div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    <div class="input-area">
+      <form id='myForm' action="/process/" method="post">
+        <textarea id='textInput' name="input_text" rows="1" placeholder="Type your question here..." required></textarea>
+        <div class="input-buttons">
+          <button id="myBtn" type="submit" class="send-btn" title="Send message">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('myForm');
+    const input = document.getElementById("textInput");
+    const chatBox = document.getElementById('chat-box');
+    const suggestionChips = document.querySelectorAll('.suggestion-chip');
+    const clearBtn = document.getElementById('clearBtn');
+
+    input.addEventListener("input", function() {
+      this.style.height = "auto";
+      this.style.height = (this.scrollHeight) + "px";
+      if (this.scrollHeight > 150) {
+        this.style.overflowY = "auto";
+      } else {
+        this.style.overflowY = "hidden";
+      }
+    });
+
+    input.addEventListener("keydown", function(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        document.getElementById("myBtn").click();
+      }
+    });
+
+    suggestionChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        input.value = chip.textContent;
+        input.focus();
+      });
+    });
+
+    form.addEventListener('submit', function(e) {
+      // Show loading state
+      const loadingIndicator = document.createElement('div');
+      loadingIndicator.className = 'message ai-message';
+      loadingIndicator.id = 'typing-indicator';
+      loadingIndicator.innerHTML = `
+        <div class="message-container">
+          <div class="avatar ai-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              SmartDesk AI is thinking
+              <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      setTimeout(() => {
+        chatBox.appendChild(loadingIndicator);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }, 100);
+    });
+
+    clearBtn.addEventListener('click', async function () {
+    if (confirm("Are you sure you want to clear the conversation?")) {
+        const response = await fetch("/clear-history/", {
+        method: "POST"
+        });
+
+        if (response.ok) {
+        document.getElementById("chat-box").innerHTML = `
+            <div class="message ai-message">
+            <div class="message-container">
+                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
+                <div class="message-content">
+                <div class="answer">Conversation cleared! How can I help you now?</div>
+                <div class="message-time">Today</div>
+                </div>
+            </div>
+            </div>
+        `;
+        } else {
+        alert("Failed to clear conversation. Please try again.");
+        }
+    }
+    });
+
+
+    window.addEventListener('load', () => {
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
