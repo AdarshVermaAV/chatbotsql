@@ -19,10 +19,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# If you have static files like CSS or JS, uncomment this
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# Store chat history in memory (will be lost when server restarts)
 chat_history = []
 
 class TextInput(BaseModel):
