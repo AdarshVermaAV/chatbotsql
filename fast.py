@@ -59,15 +59,15 @@ def process_text_input(text_input: TextInput) -> str:
         elif decision == "explain":
             return (
                 "I'm your smart AI assistant 🤖! Here's how I can help:\n"
-                "- 💽 Run SQL queries and explore your database with ease\n"
-                "- 🌐 Answer general questions — from fun facts to science, AI, and more\n"
-                "- 🗣️ Have natural conversations about topics you're curious about\n"
-                "\nJust ask me anything — I've got you covered! 🚀"
+                "- Run SQL queries and explore your database with ease\n"
+                "- Answer general questions — from fun facts to science, AI, and more\n"
+                "- Have natural conversations about topics you're curious about\n"
+                "\nJust ask me anything — I've got you covered!"
             )
 
         elif decision == "general":
             general_prompt = PromptTemplate.from_template("""
-            You're a smart and friendly AI assistant 🤖.
+            You're a smart and friendly AI assistant.
             Respond to the user's general question in a helpful, natural, and conversational tone.
             Use emojis when appropriate to express emotions like curiosity, excitement, or empathy.
             Keep your answer clear, concise, and engaging.
