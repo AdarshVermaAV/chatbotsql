@@ -1,6 +1,0 @@
-fastapi
-pydantic
-pyodbc
-python-dotenv
-langchain
-langchain-openai
