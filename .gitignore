@@ -1,2 +1,15 @@
-".env" 
-"__pycache__/" 
+# Ignore Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+ 
+# Ignore virtual environment directories
+.venv/
+myenv/
+ 
+#alembic/versions
+ 
+ 
+# Ignore environment variables file
+.env

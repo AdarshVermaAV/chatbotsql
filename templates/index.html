@@ -301,6 +301,11 @@
       transform: scale(0.95);
     }
 
+    .send-btn:disabled {
+      background-color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
     .typing-indicator {
       display: inline-flex;
       align-items: center;
@@ -444,58 +449,14 @@
     </div>
 
     <div class="chat-box" id="chat-box">
-      {% if not previous_messages %}
-      <div class="message ai-message">
-        <div class="message-container">
-          <div class="avatar ai-avatar">
-            <i class="fas fa-robot"></i>
-          </div>
-          <div class="message-content">
-            <div class="answer">Hello! I'm your smart assistant — here to help with both database queries and general questions. How can I help you today?</div>
-            <div class="message-time">Today, {{ current_time }}</div>
-          </div>
-        </div>
-        <div class="suggestion-chips">
-          <div class="suggestion-chip">How many tables are in the database?</div>
-          <div class="suggestion-chip">Show all users</div>
-          <div class="suggestion-chip">Tell me a fun fact</div>
-        </div>
-      </div>
-      {% endif %}
-
-      {% if previous_messages %}
-        {% for message in previous_messages %}
-          <div class="message user-message">
-            <div class="message-container">
-              <div class="avatar user-avatar">
-                <i class="fas fa-user"></i>
-              </div>
-              <div class="message-content">
-                <div class="question">{{ message.question }}</div>
-                <div class="message-time">Today</div>
-              </div>
-            </div>
-          </div>
-          <div class="message ai-message">
-            <div class="message-container">
-              <div class="avatar ai-avatar">
-                <i class="fas fa-robot"></i>
-              </div>
-              <div class="message-content">
-                <div class="answer">{{ message.answer }}</div>
-                <div class="message-time">Today</div>
-              </div>
-            </div>
-          </div>
-        {% endfor %}
-      {% endif %}
+      <!-- Chat messages will appear here -->
     </div>
 
     <div class="input-area">
-      <form id='myForm' action="/process/" method="post">
-        <textarea id='textInput' name="input_text" rows="1" placeholder="Type your question here..." required></textarea>
+      <form id="chatForm">
+        <textarea id="textInput" name="input_text" rows="1" placeholder="Type your question here..." required></textarea>
         <div class="input-buttons">
-          <button id="myBtn" type="submit" class="send-btn" title="Send message">
+          <button id="sendBtn" type="submit" class="send-btn" title="Send message">
             <i class="fas fa-paper-plane"></i>
           </button>
         </div>
@@ -504,93 +465,237 @@
   </div>
 
   <script>
-    const form = document.getElementById('myForm');
-    const input = document.getElementById("textInput");
-    const chatBox = document.getElementById('chat-box');
-    const suggestionChips = document.querySelectorAll('.suggestion-chip');
-    const clearBtn = document.getElementById('clearBtn');
-
-    input.addEventListener("input", function() {
-      this.style.height = "auto";
-      this.style.height = (this.scrollHeight) + "px";
-      if (this.scrollHeight > 150) {
-        this.style.overflowY = "auto";
-      } else {
-        this.style.overflowY = "hidden";
+    document.addEventListener('DOMContentLoaded', function () {
+      const chatBox = document.getElementById('chat-box');
+      const chatForm = document.getElementById('chatForm');
+      const textInput = document.getElementById('textInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const clearBtn = document.getElementById('clearBtn');
+  
+      let isProcessing = false;
+  
+      async function getCurrentTime() {
+        try {
+          const response = await fetch('/get-time/');
+          const data = await response.json();
+          return data.time;
+        } catch (error) {
+          console.error('Failed to get current time:', error);
+          return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
       }
-    });
-
-    input.addEventListener("keydown", function(event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        document.getElementById("myBtn").click();
+  
+      async function loadChatHistory() {
+        try {
+          const response = await fetch('/get-history/');
+          const data = await response.json();
+  
+          if (data.chat_history && data.chat_history.length > 0) {
+            chatBox.innerHTML = '';
+            data.chat_history.forEach(message => {
+              addUserMessage(message.question);
+              addAIMessage(message.answer || '');
+            });
+          } else {
+            addWelcomeMessage();
+          }
+  
+          scrollToBottom();
+        } catch (error) {
+          console.error('Failed to load chat history:', error);
+          addWelcomeMessage();
+        }
       }
-    });
-
-    suggestionChips.forEach(chip => {
-      chip.addEventListener('click', () => {
-        input.value = chip.textContent;
-        input.focus();
-      });
-    });
-
-    form.addEventListener('submit', function(e) {
-      // Show loading state
-      const loadingIndicator = document.createElement('div');
-      loadingIndicator.className = 'message ai-message';
-      loadingIndicator.id = 'typing-indicator';
-      loadingIndicator.innerHTML = `
-        <div class="message-container">
-          <div class="avatar ai-avatar">
-            <i class="fas fa-robot"></i>
+  
+      function addWelcomeMessage() {
+        const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const welcomeHtml = `
+          <div class="message ai-message">
+            <div class="message-container">
+              <div class="avatar ai-avatar">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div class="message-content">
+                <div class="answer">Hello! I'm your smart assistant — here to help with both database queries and general questions. How can I help you today?</div>
+                <div class="message-time">Today, ${currentTime}</div>
+              </div>
+            </div>
+            <div class="suggestion-chips">
+              <div class="suggestion-chip">How many tables are in the database?</div>
+              <div class="suggestion-chip">Show all users</div>
+              <div class="suggestion-chip">Tell me a fun fact</div>
+            </div>
+        `;
+        chatBox.innerHTML = welcomeHtml;
+  
+        document.querySelectorAll('.suggestion-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            textInput.value = chip.textContent;
+            textInput.focus();
+          });
+        });
+      }
+  
+      function addUserMessage(message) {
+        const userMessageHtml = `
+          <div class="message user-message">
+            <div class="message-container">
+              <div class="avatar user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="message-content">
+                <div class="question">${message}</div>
+                <div class="message-time">Today</div>
+              </div>
+            </div>
           </div>
-          <div class="message-content">
-            <div class="typing-indicator">
-              SmartDesk AI is thinking
-              <div class="typing-dots">
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
-                <div class="typing-dot"></div>
+        `;
+        chatBox.insertAdjacentHTML('beforeend', userMessageHtml);
+        scrollToBottom();
+      }
+  
+      function formatAIResponse(rawText) {
+        const sections = rawText.trim().split(/\n{2,}/); // split paragraphs
+        return sections.map(section => {
+          const trimmed = section.trim().replace(/^\s+/, '');
+          if (!trimmed) return '';
+          const sentences = trimmed.split(/(?<=[.?!])\s+/);
+          const title = sentences[0];
+          const bullets = sentences.slice(1).map(line => `<li>${line}</li>`).join('');
+          return `
+            <div style="margin-bottom: 12px;">
+              <strong style="font-size: 16px; color: #4d7cfe;">${title}</strong>
+              <ul style="padding-left: 1rem; margin-top: 6px; color: #ccc;">
+                ${bullets}
+              </ul>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function addAIMessage(message, time) {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) typingIndicator.remove();
+
+        const cleanedMessage = (message || '').trim();
+        const formattedMessage = formatAIResponse(cleanedMessage);
+
+        const aiMessageHtml = `
+          <div class="message ai-message" style="animation: fadeIn 0.4s ease-in;">
+            <div class="message-container">
+              <div class="avatar ai-avatar">
+                <i class="fas fa-robot"></i>
+              </div>
+              <div class="message-content">
+                <div class="answer" style="white-space: normal;">${formattedMessage}</div>
+                <div class="message-time">Today, ${time}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        chatBox.insertAdjacentHTML('beforeend', aiMessageHtml);
+        scrollToBottom();
+      }
+
+
+  
+    function addTypingIndicator() {
+      const typingHtml = `
+        <div class="message ai-message" id="typing-indicator">
+          <div class="message-container">
+            <div class="avatar ai-avatar">
+              <i class="fas fa-robot"></i>
+            </div>
+            <div class="message-content">
+              <div class="typing-indicator">
+                Bot AI is thinking
+                <div class="typing-dots">
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                  <div class="typing-dot"></div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       `;
-      
-      setTimeout(() => {
-        chatBox.appendChild(loadingIndicator);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }, 100);
-    });
-
-    clearBtn.addEventListener('click', async function () {
-    if (confirm("Are you sure you want to clear the conversation?")) {
-        const response = await fetch("/clear-history/", {
-        method: "POST"
-        });
-
-        if (response.ok) {
-        document.getElementById("chat-box").innerHTML = `
-            <div class="message ai-message">
-            <div class="message-container">
-                <div class="avatar ai-avatar"><i class="fas fa-robot"></i></div>
-                <div class="message-content">
-                <div class="answer">Conversation cleared! How can I help you now?</div>
-                <div class="message-time">Today</div>
-                </div>
-            </div>
-            </div>
-        `;
-        } else {
-        alert("Failed to clear conversation. Please try again.");
-        }
+      chatBox.insertAdjacentHTML('beforeend', typingHtml);
+      scrollToBottom();
     }
-    });
-
-
-    window.addEventListener('load', () => {
-      chatBox.scrollTop = chatBox.scrollHeight;
+  
+      function scrollToBottom() {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+  
+      chatForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (isProcessing) return;
+  
+        const userInput = textInput.value.trim();
+        if (!userInput) return;
+  
+        isProcessing = true;
+        sendBtn.disabled = true;
+  
+        addUserMessage(userInput);
+        textInput.value = '';
+        textInput.style.height = 'auto';
+        addTypingIndicator();
+  
+        try {
+          const response = await fetch('/process-text/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ input_text: userInput }),
+          });
+  
+          const data = await response.json();
+          const aiOutput = data.output || {};
+          const aiResponse = aiOutput.response || 'No response';
+          const aiName = aiOutput.name || '';
+          const time = data.time || await getCurrentTime();
+  
+          addAIMessage(aiResponse, time);
+        } catch (error) {
+          console.error('Error processing request:', error);
+          addAIMessage('Sorry, there was an error processing your request. Please try again.', await getCurrentTime());
+        } finally {
+          isProcessing = false;
+          sendBtn.disabled = false;
+        }
+      });
+  
+      clearBtn.addEventListener('click', async function () {
+        if (confirm("Are you sure you want to clear the conversation?")) {
+          try {
+            await fetch('/clear-history/', { method: 'POST' });
+            chatBox.innerHTML = '';
+            addWelcomeMessage();
+          } catch (error) {
+            console.error('Failed to clear conversation:', error);
+            alert('Failed to clear conversation. Please try again.');
+          }
+        }
+      });
+  
+      textInput.addEventListener("input", function () {
+        this.style.height = "auto";
+        this.style.height = (this.scrollHeight) + "px";
+        this.style.overflowY = this.scrollHeight > 150 ? "auto" : "hidden";
+      });
+  
+      textInput.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          sendBtn.click();
+        }
+      });
+  
+      loadChatHistory();
     });
   </script>
+  
 </body>
 </html>
