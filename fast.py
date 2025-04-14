@@ -71,16 +71,13 @@ def process_text_input(text_input: TextInput):
             }
 
         elif decision == "explain":
-            return {
-                "response": (
-                    "I'm your smart AI assistant! Here's how I can help:\n"
-                    "- Run SQL queries and explore your database with ease\n"
-                    "- Answer general questions — from fun facts to science, AI, and more\n"
-                    "- Have natural conversations about topics you're curious about\n"
-                    "\nJust ask me anything — I've got you covered!"
-                ),
-                "name": "assistant"
-            }
+            return (
+                "I'm your smart AI assistant 🤖! Here's how I can help:\n"
+                "- Run SQL queries and explore your database with ease\n"
+                "- Answer general questions — from fun facts to science, AI, and more\n"
+                "- Have natural conversations about topics you're curious about\n"
+                "\nJust ask me anything — I've got you covered!"
+            )
 
         elif decision == "general":
             general_prompt = PromptTemplate.from_template("""
